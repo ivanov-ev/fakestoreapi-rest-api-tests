@@ -1,22 +1,15 @@
 package tests;
 
-import com.codeborne.selenide.Selenide;
 import io.qameta.allure.*;
-import io.restassured.mapper.ObjectMapper;
-import io.restassured.module.jsv.JsonSchemaValidator;
-import models.*;
-import models.shared.GenericUserAddressSection;
-import models.shared.GenericUserAddressSectionGeolocationSubsection;
-import models.shared.GenericUserNameSection;
+import models.addUser.*;
+import models.deleteUser.DeleteUserRequest;
+import models.deleteUser.DeleteUserResponse;
+import models.updateUser.*;
 import org.apache.commons.io.FileUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.*;
-import org.openqa.selenium.Cookie;
-import specs.*;
 
 import java.io.File;
 
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
@@ -24,6 +17,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static specs.AddUserSpec.AddUserRequestSpec;
 import static specs.AddUserSpec.AddUserResponseSpec;
+import static specs.DeleteUserSpec.DeleteUserRequestSpec;
+import static specs.DeleteUserSpec.DeleteUserResponseSpec;
+import static specs.UpdateUserSpec.UpdateUserRequestSpec;
+import static specs.UpdateUserSpec.UpdateUserResponseSpec;
 
 @Tag("rest_api_tests")
 @DisplayName("Tests for the REST API methods related to the '/users' controller")
@@ -34,56 +31,83 @@ import static specs.AddUserSpec.AddUserResponseSpec;
 public class UsersControllerTests extends TestBase {
 
     @Test
-    @DisplayName("Add a user")
+    @DisplayName("POST: Add a user")
     void addUserTest() {
-
-        step("Add a user", () -> {
+        step("POST: Add a user", () -> {
             AddUserRequest jsonRequestBody = new AddUserRequest();
             prepareAddUserRequestBody(jsonRequestBody);
-
-            String jsonSchema = FileUtils.readFileToString(new File("src/test/resources/jsonSchemas/AddUserRequestSchema.json"), "UTF-8");
-            System.out.println(jsonSchema);
-
-            AddUserResponse addUserResponse = step("Perform a POST request", ()->
+            AddUserResponse addUserResponse = step("Perform a POST request", () ->
                     given(AddUserRequestSpec)
                             .body(jsonRequestBody)
-                            //.body(JsonSchemaValidator.matchesJsonSchema(new File("src/test/resources/jsonSchemas/AddUserRequestSchema.json")))
-                            //.body(JsonSchemaValidator.matchesJsonSchema(jsonSchema))
-                            .body(matchesJsonSchemaInClasspath("jsonSchemas/AddUserRequestSchema.json"))
-                    .when()
+                            .when()
                             .post()
-                    .then()
+                            .then()
                             .spec(AddUserResponseSpec)
-                            .body("$", hasKey("id")) //this assertion is no longer needed
-                            //.assertThat().body("id", isA(Integer.class))
-                            //.body(JsonSchemaValidator.matchesJsonSchema(new File("src/test/resources/jsonSchemas/AddUserResponseSchema.json"))) //TODO оно случайно работает, тут просто без разницы, сериализован или нет
+                            .assertThat()
+                            .body("id", is(notNullValue())) //it duplicates the below assertion
                             .body(matchesJsonSchemaInClasspath("jsonSchemas/AddUserResponseSchema.json"))
                             .extract().as(AddUserResponse.class)
             );
-
-            //The documentation is wrong, because I receive only 'id', not a huge json response
             step("Check the response", () -> {
-                        //Assertions.assertFalse(addUserResponse.getId().isBlank());
-                        Assertions.assertFalse(addUserResponse.getId().toString().isEmpty());
-//                        Assertions.assertEquals(jsonRequestBody.getEmail(), addUserResponse.getEmail()); //these commands are no longer needed
-//                        Assertions.assertEquals(jsonRequestBody.getUsername(), addUserResponse.getUsername());
-//                        Assertions.assertEquals(jsonRequestBody.getPassword(), addUserResponse.getPassword());
-
+                          Assertions.assertFalse(addUserResponse.getId().toString().isEmpty());
                     }
             );
         });
     }
 
     @Test
-    @DisplayName("Update a user")
+    @DisplayName("PUT: Update a user")
     void updateUserTest() {
-
+        step("PUT: Update a user", () -> {
+            int id = 7;
+            UpdateUserRequest jsonRequestBody = new UpdateUserRequest();
+            prepareUpdateUserRequestBody(jsonRequestBody);
+            UpdateUserResponse updateUserResponse = step("Perform a PUT request", () ->
+                    given(UpdateUserRequestSpec)
+                            .body(jsonRequestBody)
+                            .when()
+                            .put("/{id}", id)
+                            .then()
+                            .spec(UpdateUserResponseSpec)
+                            .body(matchesJsonSchemaInClasspath("jsonSchemas/UpdateUserResponseSchema.json"))
+                            .extract().as(UpdateUserResponse.class)
+            );
+            step("Check the response returns the same fields as the request body", () -> {
+                        Assertions.assertEquals(jsonRequestBody.getEmail(), updateUserResponse.getEmail());
+                        Assertions.assertEquals(jsonRequestBody.getUsername(), updateUserResponse.getUsername());
+                        Assertions.assertEquals(jsonRequestBody.getPassword(), updateUserResponse.getPassword());
+                        Assertions.assertEquals(jsonRequestBody.getName().getFirstname(), updateUserResponse.getName().getFirstname());
+                        Assertions.assertEquals(jsonRequestBody.getName().getLastname(), updateUserResponse.getName().getLastname());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getCity(), updateUserResponse.getAddress().getCity());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getStreet(), updateUserResponse.getAddress().getStreet());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getNumber(), updateUserResponse.getAddress().getNumber());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getZipcode(), updateUserResponse.getAddress().getZipcode());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getGeolocation().getLat(), updateUserResponse.getAddress().getGeolocation().getLat());
+                        Assertions.assertEquals(jsonRequestBody.getAddress().getGeolocation().getLongitude(), updateUserResponse.getAddress().getGeolocation().getLongitude());
+                        Assertions.assertEquals(jsonRequestBody.getPhone(), updateUserResponse.getPhone());
+                        System.out.println(updateUserResponse);
+                    }
+            );
+        });
     }
 
     @Test
-    @DisplayName("Delete a user")
+    @DisplayName("DELETE: Delete a user")
     void deleteUserTest() {
-
+        step("DELETE: Delete a user", () -> {
+            int id = 6;
+            DeleteUserResponse deleteUserResponse = step("Perform a DELETE request", () ->
+                    given(DeleteUserRequestSpec)
+                            .when()
+                            .delete("/{id}", id)
+                            .then()
+                            .spec(DeleteUserResponseSpec)
+                            .assertThat()
+                            .body("id", is(notNullValue()))
+                            .body(matchesJsonSchemaInClasspath("jsonSchemas/DeleteUserResponseSchema.json"))
+                            .extract().as(DeleteUserResponse.class)
+            );
+        });
     }
 
     @Test
@@ -142,6 +166,36 @@ public class UsersControllerTests extends TestBase {
         addUserRequestSectionName.setFirstname("John");
         addUserRequestSectionName.setLastname("Doe");
         jsonRequestBody.setName(addUserRequestSectionName);
+
+        jsonRequestBody.setPhone("1-570-236-7033");
+        System.out.println(jsonRequestBody);
+        return jsonRequestBody;
+    }
+
+    @Step("UpdateUserRequest: prepare a JSON request body")
+    public UpdateUserRequest prepareUpdateUserRequestBody(UpdateUserRequest jsonRequestBody) {
+        jsonRequestBody.setEmail("John@gmail.com");
+        jsonRequestBody.setUsername("johnd");
+        jsonRequestBody.setPassword("m38rmF$");
+
+        UpdateUserRequestSectionAddress updateUserRequestSectionAddress = new UpdateUserRequestSectionAddress();
+        updateUserRequestSectionAddress.setCity("kilcoole");
+        updateUserRequestSectionAddress.setStreet("7835 new road");
+        updateUserRequestSectionAddress.setNumber(3);
+        updateUserRequestSectionAddress.setZipcode("12926-3874");
+
+        UpdateUserRequestSectionGeolocation updateUserRequestSectionGeolocation =
+                new UpdateUserRequestSectionGeolocation();
+        updateUserRequestSectionGeolocation.setLat("-37.3159");
+        updateUserRequestSectionGeolocation.setLongitude("81.1496");
+
+        updateUserRequestSectionAddress.setGeolocation(updateUserRequestSectionGeolocation);
+        jsonRequestBody.setAddress(updateUserRequestSectionAddress);
+
+        UpdateUserRequestSectionName updateUserRequestSectionName = new UpdateUserRequestSectionName();
+        updateUserRequestSectionName.setFirstname("John");
+        updateUserRequestSectionName.setLastname("Doe");
+        jsonRequestBody.setName(updateUserRequestSectionName);
 
         jsonRequestBody.setPhone("1-570-236-7033");
         System.out.println(jsonRequestBody);

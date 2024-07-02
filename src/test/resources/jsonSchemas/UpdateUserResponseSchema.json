@@ -3,22 +3,22 @@
   "type": "object",
   "properties": {
     "email": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "username": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "password": {
-      "type": "string"
+      "type": ["string", "number", "null"]
     },
     "name": {
       "type": "object",
       "properties": {
         "firstname": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "lastname": {
-          "type": "string"
+          "type": ["string", "null"]
         }
       }
     },
@@ -26,32 +26,32 @@
       "type": "object",
       "properties": {
         "city": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "street": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "number": {
-          "type": "number"
+          "type": ["number", "null"]
         },
         "zipcode": {
-          "type": "string"
+          "type": ["string", "null"]
         },
         "geolocation": {
           "type": "object",
           "properties": {
             "lat": {
-              "type": "string"
+              "type": ["string", "null"]
             },
             "long": {
-              "type": "string"
+              "type": ["string", "null"]
             }
           }
         }
       }
     },
     "phone": {
-      "type": "string"
+      "type": ["string", "number", "null"]
     }
   }
 }
