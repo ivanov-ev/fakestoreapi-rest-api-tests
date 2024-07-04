@@ -14,7 +14,7 @@ public class DeleteUserSpec {
 
     public static RequestSpecification DeleteUserRequestSpec = with()
             .filter(withCustomTemplates())
-            .contentType(JSON)
+            .contentType(JSON) //Todo: there is no need to validate the content type because the request has no body
             .log().method()
             .log().uri()
             .log().body()

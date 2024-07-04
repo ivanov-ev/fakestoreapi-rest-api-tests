@@ -4,13 +4,16 @@ import io.qameta.allure.*;
 import models.addUser.*;
 import models.deleteUser.DeleteUserRequest;
 import models.deleteUser.DeleteUserResponse;
+import models.getUser.GetUserResponse;
 import models.updateUser.*;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
 
 import java.io.File;
+import java.util.*;
 
 import static io.qameta.allure.Allure.step;
+import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -19,6 +22,8 @@ import static specs.AddUserSpec.AddUserRequestSpec;
 import static specs.AddUserSpec.AddUserResponseSpec;
 import static specs.DeleteUserSpec.DeleteUserRequestSpec;
 import static specs.DeleteUserSpec.DeleteUserResponseSpec;
+import static specs.GetUsersSpec.GetUserRequestSpec;
+import static specs.GetUsersSpec.GetUserResponseSpec;
 import static specs.UpdateUserSpec.UpdateUserRequestSpec;
 import static specs.UpdateUserSpec.UpdateUserResponseSpec;
 
@@ -49,7 +54,7 @@ public class UsersControllerTests extends TestBase {
                             .extract().as(AddUserResponse.class)
             );
             step("Check the response", () -> {
-                          Assertions.assertFalse(addUserResponse.getId().toString().isEmpty());
+                        Assertions.assertFalse(addUserResponse.getId().toString().isEmpty());
                     }
             );
         });
@@ -111,18 +116,47 @@ public class UsersControllerTests extends TestBase {
     }
 
     @Test
-    @DisplayName("Get all users")
-    void getAllUsersTest() {
-
-    }
-
-    @Test
     @DisplayName("Get a single user")
     void getSingleUserTest() {
+        step("GET: Get a user", () -> {
+            int id = 1;
+            GetUserResponse getUserResponse = step("Perform a GET request", () ->
+                    given(GetUserRequestSpec)
+                            .when()
+                            .get("/{id}", id)
+                            .then()
+                            .spec(GetUserResponseSpec)
+                            .assertThat()
+                            .body("id", is(notNullValue()))
+                            .body(matchesJsonSchemaInClasspath("jsonSchemas/GetUserResponseSchema.json"))
+                            .extract().as(GetUserResponse.class)
+            );
+        });
+    }
 
+    //Todo validate JSON schema! or add another schema with "array"!
+    //The below 3 tests will use the same model and schema (not sure about 1 vs N in schema
+    //Todo: add lambda tests
+    @Test
+    @DisplayName("Get all users")
+    void getAllUsersTest() {
+        ArrayList<Integer> returnedIds = new ArrayList<>();
+        GetUserResponse[] getUserResponseList = get("/users").as(GetUserResponse[].class);//Add spec!
+
+        for (GetUserResponse getUserResponse : getUserResponseList) {
+            String receivedId = getUserResponse.getId().toString();
+            System.out.println("\nid = " + receivedId);
+            System.out.println("getUserResponse = " + getUserResponse);
+            Assertions.assertNotNull(getUserResponse.getId());
+
+            returnedIds.add(getUserResponse.getId());
+            System.out.println("Returned IDs = " + returnedIds + "\n");
+            Assertions.assertFalse(containsDuplicates(returnedIds));
+        }
     }
 
     //TODO make it a parameterized test
+    //get("/users?limit=3"
     @Test
     @DisplayName("Get multiple users, but limited by the 'limit' query string parameter")
     void getUserLimitedTest() {
@@ -136,10 +170,7 @@ public class UsersControllerTests extends TestBase {
     }
 
 
-
-
     //Add a negative test to get a error message instead of a JSON response
-
 
 
     @Step("AddUserRequest: prepare a JSON request body")
@@ -200,5 +231,11 @@ public class UsersControllerTests extends TestBase {
         jsonRequestBody.setPhone("1-570-236-7033");
         System.out.println(jsonRequestBody);
         return jsonRequestBody;
+    }
+
+    //Todo: move to a helper file or move it to the test
+    public static <T> boolean containsDuplicates(ArrayList<T> list) {
+        Set<T> uniqueElements = new HashSet<>(list);
+        return uniqueElements.size() != list.size();
     }
 }
