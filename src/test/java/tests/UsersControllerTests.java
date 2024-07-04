@@ -134,25 +134,36 @@ public class UsersControllerTests extends TestBase {
         });
     }
 
-    //Todo validate JSON schema! or add another schema with "array"!
+
     //The below 3 tests will use the same model and schema (not sure about 1 vs N in schema
-    //Todo: add lambda tests
+
     @Test
     @DisplayName("Get all users")
     void getAllUsersTest() {
-        ArrayList<Integer> returnedIds = new ArrayList<>();
-        GetUserResponse[] getUserResponseList = get("/users").as(GetUserResponse[].class);//Add spec!
+        GetUserResponse[] getUserResponseList = step("Perform a GET request", () ->
+                given(GetUserRequestSpec)
+                        .when()
+                        .get()
+                        .then()
+                        .spec(GetUserResponseSpec)
+                        .body(matchesJsonSchemaInClasspath("jsonSchemas/GetUsersResponseSchema.json"))
+                        .extract().as(GetUserResponse[].class)
+        );
 
-        for (GetUserResponse getUserResponse : getUserResponseList) {
-            String receivedId = getUserResponse.getId().toString();
-            System.out.println("\nid = " + receivedId);
-            System.out.println("getUserResponse = " + getUserResponse);
-            Assertions.assertNotNull(getUserResponse.getId());
+        step("Check that user IDs are unique and non-blank", () -> {
+                    ArrayList<Integer> returnedIds = new ArrayList<>();
+                    for (GetUserResponse getUserResponse : getUserResponseList) {
+                        Integer receivedId = getUserResponse.getId();
+                        System.out.println("\nid = " + receivedId);
+                        System.out.println("getUserResponse = " + getUserResponse);
+                        Assertions.assertNotNull(receivedId, "ID is not blank");
 
-            returnedIds.add(getUserResponse.getId());
-            System.out.println("Returned IDs = " + returnedIds + "\n");
-            Assertions.assertFalse(containsDuplicates(returnedIds));
-        }
+                        returnedIds.add(receivedId);
+                    }
+                    System.out.println("Returned IDs = " + returnedIds + "\n");
+                    Assertions.assertFalse(containsDuplicates(returnedIds), "Found user IDs have no duplicates");
+                }
+        );
     }
 
     //TODO make it a parameterized test
