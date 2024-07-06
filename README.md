@@ -1,9 +1,9 @@
-# Sample Test Automation Project in Java for the [FAKESTOREAPI.COM](https://hflabs.ru/) Website (REST API)
+# Sample Test Automation Project in Java for the [FAKESTOREAPI.COM](https://fakestoreapi.com/) Website (REST API)
 
 ---
 Fakestore.com is a website that provides a sample REST API intended for learning purposes.
 
-<a href="hhttps://hflabs.ru/"><img src="./images/logos/fakestore.com.logo.png"/></a>
+<a href="https://fakestoreapi.com/"><img src="./images/logos/fakestore.com.logo.png"/></a>
 
 > [!NOTE]
 > This is my final project for the 'Java Test Automation' course at <a href="https://qa.guru">QA.GURU</a>. 
