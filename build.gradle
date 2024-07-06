@@ -51,7 +51,7 @@ tasks.withType(Test) {
     useJUnitPlatform()
 }
 
-task simple_tests(type: Test) {
+task rest_api_tests(type: Test) {
     useJUnitPlatform {
         includeTags("rest_api_tests")
     }
