@@ -8,10 +8,14 @@ import models.getUser.GetUserResponse;
 import models.updateUser.*;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.util.*;
 
+import static helpers.Collections.containsDuplicates;
 import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -134,9 +138,6 @@ public class UsersControllerTests extends TestBase {
         });
     }
 
-
-    //The below 3 tests will use the same model and schema (not sure about 1 vs N in schema
-
     @Test
     @DisplayName("Get all users")
     void getAllUsersTest() {
@@ -157,7 +158,6 @@ public class UsersControllerTests extends TestBase {
                         System.out.println("\nid = " + receivedId);
                         System.out.println("getUserResponse = " + getUserResponse);
                         Assertions.assertNotNull(receivedId, "ID is not blank");
-
                         returnedIds.add(receivedId);
                     }
                     System.out.println("Returned IDs = " + returnedIds + "\n");
@@ -166,23 +166,84 @@ public class UsersControllerTests extends TestBase {
         );
     }
 
-    //TODO make it a parameterized test
-    //get("/users?limit=3"
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = {1, 5, 5000})
     @DisplayName("Get multiple users, but limited by the 'limit' query string parameter")
-    void getUserLimitedTest() {
+    void getUserLimitedTest(int limit) {
+        GetUserResponse[] getUserResponseList = step("Perform a GET request", () ->
+                given(GetUserRequestSpec)
+                        .queryParam("limit", limit)
+                        .when()
+                        .get()
+                        .then()
+                        .spec(GetUserResponseSpec)
+                        .body(matchesJsonSchemaInClasspath("jsonSchemas/GetUsersResponseSchema.json"))
+                        .extract().as(GetUserResponse[].class)
+        );
 
+        step("Check the number of found users does not exceed the limit", () -> {
+                    Assertions.assertTrue(getUserResponseList.length <= limit, "The number of objects <= the limit parameter");
+                }
+        );
     }
 
     @Test
     @DisplayName("Get all users sorted in ascending and descending orders")
     void getAllUsersAscDescTest() {
-        //TODO asc, then desc in a single run
+        GetUserResponse[] getUserResponseDescList = step("Perform a GET request", () ->
+                given(GetUserRequestSpec)
+                        .queryParam("sort", "asc")
+                        .when()
+                        .get()
+                        .then()
+                        .spec(GetUserResponseSpec)
+                        .body(matchesJsonSchemaInClasspath("jsonSchemas/GetUsersResponseSchema.json"))
+                        .extract().as(GetUserResponse[].class)
+        );
+
+        step("Check that IDs are sorted in ascending order", () -> {
+                    ArrayList<Integer> returnedIds = new ArrayList<>();
+                    for (GetUserResponse getUserResponse : getUserResponseDescList) {
+                        returnedIds.add(getUserResponse.getId());
+                    }
+                    String actualOrder = returnedIds.toString();
+                    System.out.println("Actual sorting = " + returnedIds + "\n");
+
+                    returnedIds.sort(Comparator.naturalOrder());
+                    String targetOrder = returnedIds.toString();
+                    System.out.println("Target sorting = " + targetOrder + "\n");
+
+                    Assertions.assertEquals(actualOrder, targetOrder, "The actual sorting is ASC");
+                }
+        );
+
+        GetUserResponse[] getUserResponseAscList = step("Perform a GET request", () ->
+                given(GetUserRequestSpec)
+                        .queryParam("sort", "desc")
+                        .when()
+                        .get()
+                        .then()
+                        .spec(GetUserResponseSpec)
+                        .body(matchesJsonSchemaInClasspath("jsonSchemas/GetUsersResponseSchema.json"))
+                        .extract().as(GetUserResponse[].class)
+        );
+
+        step("Check that IDs are sorted in descending order", () -> {
+                    ArrayList<Integer> returnedIds = new ArrayList<>();
+                    for (GetUserResponse getUserResponse : getUserResponseAscList) {
+                        returnedIds.add(getUserResponse.getId());
+                    }
+                    String actualOrder = returnedIds.toString();
+                    System.out.println("Actual sorting = " + returnedIds + "\n");
+
+                    returnedIds.sort(Comparator.reverseOrder());
+                    String targetOrder = returnedIds.toString();
+                    System.out.println("Target sorting = " + targetOrder + "\n");
+
+                    Assertions.assertEquals(actualOrder, targetOrder, "The actual sorting is DESC");
+                }
+        );
     }
-
-
-    //Add a negative test to get a error message instead of a JSON response
-
 
     @Step("AddUserRequest: prepare a JSON request body")
     public AddUserRequest prepareAddUserRequestBody(AddUserRequest jsonRequestBody) {
@@ -242,11 +303,5 @@ public class UsersControllerTests extends TestBase {
         jsonRequestBody.setPhone("1-570-236-7033");
         System.out.println(jsonRequestBody);
         return jsonRequestBody;
-    }
-
-    //Todo: move to a helper file or move it to the test
-    public static <T> boolean containsDuplicates(ArrayList<T> list) {
-        Set<T> uniqueElements = new HashSet<>(list);
-        return uniqueElements.size() != list.size();
     }
 }
