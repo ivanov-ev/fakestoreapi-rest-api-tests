@@ -19,7 +19,6 @@ public class UpdateUserSpec {
             .log().uri()
             .log().body()
             .basePath("/users");
-
     public static ResponseSpecification UpdateUserResponseSpec = new ResponseSpecBuilder()
             .log(STATUS)
             .expectStatusCode(200)
