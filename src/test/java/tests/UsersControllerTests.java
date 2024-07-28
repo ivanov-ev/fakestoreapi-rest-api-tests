@@ -4,6 +4,7 @@ import io.qameta.allure.*;
 import models.addUser.*;
 import models.deleteUser.DeleteUserResponse;
 import models.getUser.GetUserResponse;
+import models.shared.User;
 import models.updateUser.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,10 +12,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
 
-import static helpers.Collections.containsDuplicates;
+import static helpers.ArrayListChecker.containsDuplicates;
 import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.*;
 import static specs.AddUserSpec.AddUserRequestSpec;
 import static specs.AddUserSpec.AddUserResponseSpec;
@@ -37,31 +39,11 @@ public class UsersControllerTests extends TestBase {
     @DisplayName("POST: Add a user")
     void addUserTest() {
         step("POST: Add a user", () -> {
-            AddUserRequest jsonRequestBody = new AddUserRequest();
-            jsonRequestBody.setEmail("John@gmail.com");
-            jsonRequestBody.setUsername("johnd");
-            jsonRequestBody.setPassword("m38rmF$");
-            AddUserRequestSectionAddress addUserRequestSectionAddress = new AddUserRequestSectionAddress();
-            addUserRequestSectionAddress.setCity("kilcoole");
-            addUserRequestSectionAddress.setStreet("7835 new road");
-            addUserRequestSectionAddress.setNumber(3);
-            addUserRequestSectionAddress.setZipcode("12926-3874");
-            AddUserRequestSectionGeolocation addUserRequestSectionGeolocation =
-                    new AddUserRequestSectionGeolocation();
-            addUserRequestSectionGeolocation.setLat("-37.3159");
-            addUserRequestSectionGeolocation.setLongitude("81.1496");
-            addUserRequestSectionAddress.setGeolocation(addUserRequestSectionGeolocation);
-            jsonRequestBody.setAddress(addUserRequestSectionAddress);
-            AddUserRequestSectionName addUserRequestSectionName = new AddUserRequestSectionName();
-            addUserRequestSectionName.setFirstname("John");
-            addUserRequestSectionName.setLastname("Doe");
-            jsonRequestBody.setName(addUserRequestSectionName);
-            jsonRequestBody.setPhone("1-570-236-7033");
-            System.out.println(jsonRequestBody);
-
+            AddUserRequest addUserRequest = addUserRequestWithData();
+            logger.info(String.valueOf(addUserRequest));
             AddUserResponse addUserResponse = step("Perform a POST request", () ->
                     given(AddUserRequestSpec)
-                            .body(jsonRequestBody)
+                            .body(addUserRequest)
                             .when()
                             .post()
                             .then()
@@ -70,8 +52,9 @@ public class UsersControllerTests extends TestBase {
                                     "jsonSchemas/AddUserResponseSchema.json"))
                             .extract().as(AddUserResponse.class)
             );
-            step("Check the response has a non-blank ID", () -> {
-                        Assertions.assertFalse(addUserResponse.getId().toString().isEmpty());
+            step("Check the response has an alpha-numeric ID, and its length is equal or more than 1", () -> {
+                        assertThat(addUserResponse.getId().toString()).isAlphanumeric()
+                                .hasSizeGreaterThanOrEqualTo(1);
                     }
             );
         });
@@ -82,31 +65,11 @@ public class UsersControllerTests extends TestBase {
     void updateUserTest() {
         step("PUT: Update a user", () -> {
             int id = 7;
-            UpdateUserRequest jsonRequestBody = new UpdateUserRequest();
-            jsonRequestBody.setEmail("John@gmail.com");
-            jsonRequestBody.setUsername("johnd");
-            jsonRequestBody.setPassword("m38rmF$");
-            UpdateUserRequestSectionAddress updateUserRequestSectionAddress = new UpdateUserRequestSectionAddress();
-            updateUserRequestSectionAddress.setCity("kilcoole");
-            updateUserRequestSectionAddress.setStreet("7835 new road");
-            updateUserRequestSectionAddress.setNumber(3);
-            updateUserRequestSectionAddress.setZipcode("12926-3874");
-            UpdateUserRequestSectionGeolocation updateUserRequestSectionGeolocation =
-                    new UpdateUserRequestSectionGeolocation();
-            updateUserRequestSectionGeolocation.setLat("-37.3159");
-            updateUserRequestSectionGeolocation.setLongitude("81.1496");
-            updateUserRequestSectionAddress.setGeolocation(updateUserRequestSectionGeolocation);
-            jsonRequestBody.setAddress(updateUserRequestSectionAddress);
-            UpdateUserRequestSectionName updateUserRequestSectionName = new UpdateUserRequestSectionName();
-            updateUserRequestSectionName.setFirstname("John");
-            updateUserRequestSectionName.setLastname("Doe");
-            jsonRequestBody.setName(updateUserRequestSectionName);
-            jsonRequestBody.setPhone("1-570-236-7033");
-            System.out.println(jsonRequestBody);
-
+            UpdateUserRequest updateUserRequest = updateUserRequestWithData();
+            logger.info(String.valueOf(updateUserRequest));
             UpdateUserResponse updateUserResponse = step("Perform a PUT request", () ->
                     given(UpdateUserRequestSpec)
-                            .body(jsonRequestBody)
+                            .body(updateUserRequest)
                             .when()
                             .put("/{id}", id)
                             .then()
@@ -116,31 +79,9 @@ public class UsersControllerTests extends TestBase {
                             .extract().as(UpdateUserResponse.class)
             );
             step("Check the response returns the same values as the request body", () -> {
-                        Assertions.assertEquals(jsonRequestBody.getEmail(),
-                                updateUserResponse.getEmail());
-                        Assertions.assertEquals(jsonRequestBody.getUsername(),
-                                updateUserResponse.getUsername());
-                        Assertions.assertEquals(jsonRequestBody.getPassword(),
-                                updateUserResponse.getPassword());
-                        Assertions.assertEquals(jsonRequestBody.getName().getFirstname(),
-                                updateUserResponse.getName().getFirstname());
-                        Assertions.assertEquals(jsonRequestBody.getName().getLastname(),
-                                updateUserResponse.getName().getLastname());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getCity(),
-                                updateUserResponse.getAddress().getCity());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getStreet(),
-                                updateUserResponse.getAddress().getStreet());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getNumber(),
-                                updateUserResponse.getAddress().getNumber());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getZipcode(),
-                                updateUserResponse.getAddress().getZipcode());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getGeolocation().getLat(),
-                                updateUserResponse.getAddress().getGeolocation().getLat());
-                        Assertions.assertEquals(jsonRequestBody.getAddress().getGeolocation().getLongitude(),
-                                updateUserResponse.getAddress().getGeolocation().getLongitude());
-                        Assertions.assertEquals(jsonRequestBody.getPhone(),
-                                updateUserResponse.getPhone());
-                        System.out.println(updateUserResponse);
+                        logger.info(String.valueOf(updateUserResponse));
+                        Allure.step(String.valueOf(updateUserResponse));
+                        assertUpdateUserReqAndRes(updateUserRequest, updateUserResponse);
                     }
             );
         });
@@ -151,7 +92,7 @@ public class UsersControllerTests extends TestBase {
     void deleteUserTest() {
         step("DELETE: Delete a user", () -> {
             int id = 6;
-            step("Perform a DELETE request", () ->
+            DeleteUserResponse deleteUserResponse = step("Perform a DELETE request", () ->
                     given(DeleteUserRequestSpec)
                             .when()
                             .delete("/{id}", id)
@@ -163,6 +104,13 @@ public class UsersControllerTests extends TestBase {
                                     "jsonSchemas/DeleteUserResponseSchema.json"))
                             .extract().as(DeleteUserResponse.class)
             );
+            step("Check the response ID is equal to the request ID", () -> {
+                        logger.info("Returned ID = " + deleteUserResponse.getId());
+                        Allure.step("Returned ID = " + deleteUserResponse.getId());
+                        Assertions.assertEquals(id, deleteUserResponse.getId(),
+                                "The response contains the ID of the deleted user");
+                    }
+            );
         });
     }
 
@@ -171,7 +119,7 @@ public class UsersControllerTests extends TestBase {
     void getSingleUserTest() {
         step("GET: Get a single user", () -> {
             int id = 1;
-           step("Perform a GET request", () ->
+            GetUserResponse getUserResponse = step("Perform a GET request", () ->
                     given(GetUserRequestSpec)
                             .when()
                             .get("/{id}", id)
@@ -182,6 +130,28 @@ public class UsersControllerTests extends TestBase {
                             .body(matchesJsonSchemaInClasspath(
                                     "jsonSchemas/GetUserResponseSchema.json"))
                             .extract().as(GetUserResponse.class)
+            );
+            step("Check the response ID is equal to the request ID", () -> {
+                        logger.info("Returned ID = " + getUserResponse.getId());
+                        Allure.step("Returned ID = " + getUserResponse.getId());
+                        Assertions.assertEquals(id, getUserResponse.getId(),
+                                "The response contains the ID of the requested user");
+                    }
+            );
+            step("Check the other fields in the response data", () -> {
+                        Assertions.assertEquals(7682, getUserResponse.getAddress().getNumber());
+                        Assertions.assertEquals("john@gmail.com", getUserResponse.getEmail());
+                        Assertions.assertEquals("johnd", getUserResponse.getUsername());
+                        Assertions.assertEquals("m38rmF$", getUserResponse.getPassword());
+                        Assertions.assertEquals("john", getUserResponse.getName().getFirstname());
+                        Assertions.assertEquals("doe", getUserResponse.getName().getLastname());
+                        Assertions.assertEquals("1-570-236-7033", getUserResponse.getPhone());
+                        Assertions.assertEquals("kilcoole", getUserResponse.getAddress().getCity());
+                        Assertions.assertEquals("new road", getUserResponse.getAddress().getStreet());
+                        Assertions.assertEquals("12926-3874", getUserResponse.getAddress().getZipcode());
+                        Assertions.assertEquals("-37.3159", getUserResponse.getAddress().getGeolocation().getLat());
+                        Assertions.assertEquals("81.1496", getUserResponse.getAddress().getGeolocation().getLongitude());
+                    }
             );
         });
     }
@@ -203,12 +173,15 @@ public class UsersControllerTests extends TestBase {
                     ArrayList<Integer> returnedIds = new ArrayList<>();
                     for (GetUserResponse getUserResponse : getUserResponseList) {
                         Integer receivedId = getUserResponse.getId();
-                        System.out.println("\nid = " + receivedId);
-                        System.out.println("getUserResponse = " + getUserResponse);
+                        logger.info("id = " + receivedId);
+                        logger.info("getUserResponse = " + getUserResponse);
+                        Allure.step("id = " + receivedId);
+                        Allure.step("getUserResponse = " + getUserResponse);
                         Assertions.assertNotNull(receivedId, "ID is not blank");
                         returnedIds.add(receivedId);
                     }
-                    System.out.println("Returned IDs = " + returnedIds + "\n");
+                    logger.info("Returned IDs = " + returnedIds);
+                    Allure.step("Returned IDs = " + returnedIds);
                     Assertions.assertFalse(containsDuplicates(returnedIds),
                             "Found user IDs have no duplicates");
                 }
@@ -238,9 +211,9 @@ public class UsersControllerTests extends TestBase {
     }
 
     @Test
-    @DisplayName("GET: Get all users sorted in ascending and descending orders")
-    void getAllUsersAscDescTest() {
-        GetUserResponse[] getUserResponseDescList = step("Perform a GET request", () ->
+    @DisplayName("GET: Get all users sorted in ascending order")
+    void getAllUsersAscTest() {
+        GetUserResponse[] getUserResponseAscList = step("Perform a GET request", () ->
                 given(GetUserRequestSpec)
                         .queryParam("sort", "asc")
                         .when()
@@ -252,19 +225,26 @@ public class UsersControllerTests extends TestBase {
                         .extract().as(GetUserResponse[].class)
         );
         step("Check that IDs are sorted in ascending order", () -> {
-                    ArrayList<Integer> returnedIds = new ArrayList<>();
-                    for (GetUserResponse getUserResponse : getUserResponseDescList) {
-                        returnedIds.add(getUserResponse.getId());
-                    }
-                    String actualOrder = returnedIds.toString();
-                    System.out.println("Actual sorting = " + returnedIds + "\n");
-                    returnedIds.sort(Comparator.naturalOrder());
-                    String targetOrder = returnedIds.toString();
-                    System.out.println("Target sorting = " + targetOrder + "\n");
-                    Assertions.assertEquals(actualOrder, targetOrder, "The actual sorting is ASC");
+                    List<Integer> returnedIdsBeforeSort = Arrays.stream(getUserResponseAscList).
+                            map(GetUserResponse::getId).toList();
+                    logger.info("Actual sorting = " + returnedIdsBeforeSort);
+                    Allure.step("Actual sorting = " + returnedIdsBeforeSort);
+
+                    List<Integer> returnedIdsAfterAscSort = new ArrayList<>(returnedIdsBeforeSort);
+                    returnedIdsAfterAscSort.sort(Comparator.naturalOrder());
+                    logger.info("Target sorting = " + returnedIdsAfterAscSort);
+                    Allure.step("Target sorting = " + returnedIdsAfterAscSort);
+
+                    Assertions.assertEquals(returnedIdsBeforeSort, returnedIdsAfterAscSort,
+                            "The actual sorting is ASC");
                 }
         );
-        GetUserResponse[] getUserResponseAscList = step("Perform a GET request", () ->
+    }
+
+    @Test
+    @DisplayName("GET: Get all users sorted in descending order")
+    void getAllUsersDescTest() {
+        GetUserResponse[] getUserResponseDescList = step("Perform a GET request", () ->
                 given(GetUserRequestSpec)
                         .queryParam("sort", "desc")
                         .when()
@@ -276,17 +256,93 @@ public class UsersControllerTests extends TestBase {
                         .extract().as(GetUserResponse[].class)
         );
         step("Check that IDs are sorted in descending order", () -> {
-                    ArrayList<Integer> returnedIds = new ArrayList<>();
-                    for (GetUserResponse getUserResponse : getUserResponseAscList) {
-                        returnedIds.add(getUserResponse.getId());
-                    }
-                    String actualOrder = returnedIds.toString();
-                    System.out.println("Actual sorting = " + returnedIds + "\n");
-                    returnedIds.sort(Comparator.reverseOrder());
-                    String targetOrder = returnedIds.toString();
-                    System.out.println("Target sorting = " + targetOrder + "\n");
-                    Assertions.assertEquals(actualOrder, targetOrder, "The actual sorting is DESC");
+                    List<Integer> returnedIdsBeforeSort = Arrays.stream(getUserResponseDescList).
+                            map(GetUserResponse::getId).toList();
+                    logger.info("Actual sorting = " + returnedIdsBeforeSort);
+                    Allure.step("Actual sorting = " + returnedIdsBeforeSort);
+
+                    List<Integer> returnedIdsAfterDescSort = new ArrayList<>(returnedIdsBeforeSort);
+                    returnedIdsAfterDescSort.sort(Comparator.reverseOrder());
+                    logger.info("Target sorting = " + returnedIdsAfterDescSort);
+                    Allure.step("Target sorting = " + returnedIdsAfterDescSort);
+
+                    Assertions.assertEquals(returnedIdsBeforeSort, returnedIdsAfterDescSort,
+                            "The actual sorting is DESC");
                 }
         );
+    }
+
+    private void assertUpdateUserReqAndRes(UpdateUserRequest req, UpdateUserResponse res) {
+        Assertions.assertEquals(req.getEmail(), res.getEmail());
+        Assertions.assertEquals(req.getUsername(), res.getUsername());
+        Assertions.assertEquals(req.getPassword(), res.getPassword());
+        Assertions.assertEquals(req.getName().getFirstname(), res.getName().getFirstname());
+        Assertions.assertEquals(req.getName().getLastname(), res.getName().getLastname());
+        Assertions.assertEquals(req.getAddress().getCity(), res.getAddress().getCity());
+        Assertions.assertEquals(req.getAddress().getStreet(), res.getAddress().getStreet());
+        Assertions.assertEquals(req.getAddress().getNumber(), res.getAddress().getNumber());
+        Assertions.assertEquals(req.getAddress().getZipcode(), res.getAddress().getZipcode());
+        Assertions.assertEquals(req.getAddress().getGeolocation().getLat(), res.getAddress().getGeolocation().getLat());
+        Assertions.assertEquals(req.getAddress().getGeolocation().getLongitude(), res.getAddress().getGeolocation()
+                .getLongitude());
+        Assertions.assertEquals(req.getPhone(), res.getPhone());
+    }
+
+    private static AddUserRequest addUserRequestWithData() {
+        AddUserRequest addUserRequest = new AddUserRequest();
+        User.SectionAddress sectionAddress = new User.SectionAddress();
+        User.SectionGeolocation sectionGeolocation = new User.SectionGeolocation();
+        User.SectionName sectionName = new User.SectionName();
+
+        addUserRequest.setEmail("John@gmail.com");
+        addUserRequest.setUsername("johnd");
+        addUserRequest.setPassword("m38rmF$");
+
+        sectionAddress.setCity("kilcoole");
+        sectionAddress.setStreet("7835 new road");
+        sectionAddress.setNumber(3);
+        sectionAddress.setZipcode("12926-3874");
+
+        sectionGeolocation.setLat("-37.3159");
+        sectionGeolocation.setLongitude("81.1496");
+
+        sectionAddress.setGeolocation(sectionGeolocation);
+        addUserRequest.setAddress(sectionAddress);
+
+        sectionName.setFirstname("John");
+        sectionName.setLastname("Doe");
+
+        addUserRequest.setName(sectionName);
+        addUserRequest.setPhone("1-570-236-7033");
+        return addUserRequest;
+    }
+
+    private static UpdateUserRequest updateUserRequestWithData() {
+        UpdateUserRequest updateUserRequest = new UpdateUserRequest();
+        User.SectionAddress sectionAddress = new User.SectionAddress();
+        User.SectionGeolocation sectionGeolocation = new User.SectionGeolocation();
+        User.SectionName sectionName = new User.SectionName();
+
+        updateUserRequest.setEmail("John@gmail.com");
+        updateUserRequest.setUsername("johnd");
+        updateUserRequest.setPassword("m38rmF$");
+
+        sectionAddress.setCity("kilcoole");
+        sectionAddress.setStreet("7835 new road");
+        sectionAddress.setNumber(3);
+        sectionAddress.setZipcode("12926-3874");
+
+        sectionGeolocation.setLat("-37.3159");
+        sectionGeolocation.setLongitude("81.1496");
+
+        sectionAddress.setGeolocation(sectionGeolocation);
+        updateUserRequest.setAddress(sectionAddress);
+
+        sectionName.setFirstname("John");
+        sectionName.setLastname("Doe");
+
+        updateUserRequest.setName(sectionName);
+        updateUserRequest.setPhone("1-570-236-7033");
+        return updateUserRequest;
     }
 }

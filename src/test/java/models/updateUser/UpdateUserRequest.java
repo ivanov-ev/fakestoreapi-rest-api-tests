@@ -1,11 +1,12 @@
 package models.updateUser;
 
 import lombok.Data;
+import models.shared.User;
 
 @Data
 public class UpdateUserRequest {
     String email, username, password;
-    UpdateUserRequestSectionName name;
-    UpdateUserRequestSectionAddress address;
+    User.SectionName name;
+    User.SectionAddress address;
     String phone;
 }

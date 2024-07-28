@@ -12,14 +12,14 @@ import static io.restassured.http.ContentType.JSON;
 
 public class UpdateUserSpec {
 
-    public static RequestSpecification UpdateUserRequestSpec = with()
+    public final static RequestSpecification UpdateUserRequestSpec = with()
             .filter(withCustomTemplates())
             .contentType(JSON)
             .log().method()
             .log().uri()
             .log().body()
             .basePath("/users");
-    public static ResponseSpecification UpdateUserResponseSpec = new ResponseSpecBuilder()
+    public final static ResponseSpecification UpdateUserResponseSpec = new ResponseSpecBuilder()
             .log(STATUS)
             .expectStatusCode(200)
             .log(BODY)
