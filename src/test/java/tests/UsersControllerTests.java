@@ -1,15 +1,17 @@
 package tests;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.qameta.allure.*;
 import models.addUser.*;
 import models.deleteUser.DeleteUserResponse;
 import models.getUser.GetUserResponse;
-import models.shared.User;
 import models.updateUser.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static helpers.ArrayListChecker.containsDuplicates;
@@ -18,14 +20,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.*;
-import static specs.AddUserSpec.AddUserRequestSpec;
-import static specs.AddUserSpec.AddUserResponseSpec;
-import static specs.DeleteUserSpec.DeleteUserRequestSpec;
-import static specs.DeleteUserSpec.DeleteUserResponseSpec;
-import static specs.GetUsersSpec.GetUserRequestSpec;
-import static specs.GetUsersSpec.GetUserResponseSpec;
-import static specs.UpdateUserSpec.UpdateUserRequestSpec;
-import static specs.UpdateUserSpec.UpdateUserResponseSpec;
+import static specs.UserSpec.*;
 
 @Tag("rest_api_tests")
 @DisplayName("Tests for the REST API methods related to the '/users' controller")
@@ -42,12 +37,12 @@ public class UsersControllerTests extends TestBase {
             AddUserRequest addUserRequest = addUserRequestWithData();
             logger.info(String.valueOf(addUserRequest));
             AddUserResponse addUserResponse = step("Perform a POST request", () ->
-                    given(AddUserRequestSpec)
+                    given(UserRequestWithJsonSpec)
                             .body(addUserRequest)
                             .when()
                             .post()
                             .then()
-                            .spec(AddUserResponseSpec)
+                            .spec(UserResponseWithJsonSpec200)
                             .body(matchesJsonSchemaInClasspath(
                                     "jsonSchemas/AddUserResponseSchema.json"))
                             .extract().as(AddUserResponse.class)
@@ -68,19 +63,19 @@ public class UsersControllerTests extends TestBase {
             UpdateUserRequest updateUserRequest = updateUserRequestWithData();
             logger.info(String.valueOf(updateUserRequest));
             UpdateUserResponse updateUserResponse = step("Perform a PUT request", () ->
-                    given(UpdateUserRequestSpec)
+                    given(UserRequestWithJsonSpec)
                             .body(updateUserRequest)
                             .when()
                             .put("/{id}", id)
                             .then()
-                            .spec(UpdateUserResponseSpec)
+                            .spec(UserResponseWithJsonSpec200)
                             .body(matchesJsonSchemaInClasspath(
                                     "jsonSchemas/UpdateUserResponseSchema.json"))
                             .extract().as(UpdateUserResponse.class)
             );
             step("Check the response returns the same values as the request body", () -> {
                         logger.info(String.valueOf(updateUserResponse));
-                        Allure.step(String.valueOf(updateUserResponse));
+                        step(String.valueOf(updateUserResponse));
                         assertUpdateUserReqAndRes(updateUserRequest, updateUserResponse);
                     }
             );
@@ -93,11 +88,11 @@ public class UsersControllerTests extends TestBase {
         step("DELETE: Delete a user", () -> {
             int id = 6;
             DeleteUserResponse deleteUserResponse = step("Perform a DELETE request", () ->
-                    given(DeleteUserRequestSpec)
+                    given(UserRequestSpec)
                             .when()
                             .delete("/{id}", id)
                             .then()
-                            .spec(DeleteUserResponseSpec)
+                            .spec(UserResponseWithJsonSpec200)
                             .assertThat()
                             .body("id", is(notNullValue()))
                             .body(matchesJsonSchemaInClasspath(
@@ -106,7 +101,7 @@ public class UsersControllerTests extends TestBase {
             );
             step("Check the response ID is equal to the request ID", () -> {
                         logger.info("Returned ID = " + deleteUserResponse.getId());
-                        Allure.step("Returned ID = " + deleteUserResponse.getId());
+                        step("Returned ID = " + deleteUserResponse.getId());
                         Assertions.assertEquals(id, deleteUserResponse.getId(),
                                 "The response contains the ID of the deleted user");
                     }
@@ -120,11 +115,11 @@ public class UsersControllerTests extends TestBase {
         step("GET: Get a single user", () -> {
             int id = 1;
             GetUserResponse getUserResponse = step("Perform a GET request", () ->
-                    given(GetUserRequestSpec)
+                    given(UserRequestSpec)
                             .when()
                             .get("/{id}", id)
                             .then()
-                            .spec(GetUserResponseSpec)
+                            .spec(UserResponseWithJsonSpec200)
                             .assertThat()
                             .body("id", is(notNullValue()))
                             .body(matchesJsonSchemaInClasspath(
@@ -133,7 +128,7 @@ public class UsersControllerTests extends TestBase {
             );
             step("Check the response ID is equal to the request ID", () -> {
                         logger.info("Returned ID = " + getUserResponse.getId());
-                        Allure.step("Returned ID = " + getUserResponse.getId());
+                        step("Returned ID = " + getUserResponse.getId());
                         Assertions.assertEquals(id, getUserResponse.getId(),
                                 "The response contains the ID of the requested user");
                     }
@@ -160,11 +155,11 @@ public class UsersControllerTests extends TestBase {
     @DisplayName("GET: Get all users")
     void getAllUsersTest() {
         GetUserResponse[] getUserResponseList = step("Perform a GET request", () ->
-                given(GetUserRequestSpec)
+                given(UserRequestSpec)
                         .when()
                         .get()
                         .then()
-                        .spec(GetUserResponseSpec)
+                        .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
                                 "jsonSchemas/GetUsersResponseSchema.json"))
                         .extract().as(GetUserResponse[].class)
@@ -175,13 +170,13 @@ public class UsersControllerTests extends TestBase {
                         Integer receivedId = getUserResponse.getId();
                         logger.info("id = " + receivedId);
                         logger.info("getUserResponse = " + getUserResponse);
-                        Allure.step("id = " + receivedId);
-                        Allure.step("getUserResponse = " + getUserResponse);
+                        step("id = " + receivedId);
+                        step("getUserResponse = " + getUserResponse);
                         Assertions.assertNotNull(receivedId, "ID is not blank");
                         returnedIds.add(receivedId);
                     }
                     logger.info("Returned IDs = " + returnedIds);
-                    Allure.step("Returned IDs = " + returnedIds);
+                    step("Returned IDs = " + returnedIds);
                     Assertions.assertFalse(containsDuplicates(returnedIds),
                             "Found user IDs have no duplicates");
                 }
@@ -193,12 +188,12 @@ public class UsersControllerTests extends TestBase {
     @DisplayName("GET: Get multiple users limited by the 'limit' query string parameter")
     void getUserLimitedTest(int limit) {
         GetUserResponse[] getUserResponseList = step("Perform a GET request", () ->
-                given(GetUserRequestSpec)
+                given(UserRequestSpec)
                         .queryParam("limit", limit)
                         .when()
                         .get()
                         .then()
-                        .spec(GetUserResponseSpec)
+                        .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
                                 "jsonSchemas/GetUsersResponseSchema.json"))
                         .extract().as(GetUserResponse[].class)
@@ -214,12 +209,12 @@ public class UsersControllerTests extends TestBase {
     @DisplayName("GET: Get all users sorted in ascending order")
     void getAllUsersAscTest() {
         GetUserResponse[] getUserResponseAscList = step("Perform a GET request", () ->
-                given(GetUserRequestSpec)
+                given(UserRequestSpec)
                         .queryParam("sort", "asc")
                         .when()
                         .get()
                         .then()
-                        .spec(GetUserResponseSpec)
+                        .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
                                 "jsonSchemas/GetUsersResponseSchema.json"))
                         .extract().as(GetUserResponse[].class)
@@ -228,12 +223,12 @@ public class UsersControllerTests extends TestBase {
                     List<Integer> returnedIdsBeforeSort = Arrays.stream(getUserResponseAscList).
                             map(GetUserResponse::getId).toList();
                     logger.info("Actual sorting = " + returnedIdsBeforeSort);
-                    Allure.step("Actual sorting = " + returnedIdsBeforeSort);
+                    step("Actual sorting = " + returnedIdsBeforeSort);
 
                     List<Integer> returnedIdsAfterAscSort = new ArrayList<>(returnedIdsBeforeSort);
                     returnedIdsAfterAscSort.sort(Comparator.naturalOrder());
                     logger.info("Target sorting = " + returnedIdsAfterAscSort);
-                    Allure.step("Target sorting = " + returnedIdsAfterAscSort);
+                    step("Target sorting = " + returnedIdsAfterAscSort);
 
                     Assertions.assertEquals(returnedIdsBeforeSort, returnedIdsAfterAscSort,
                             "The actual sorting is ASC");
@@ -245,12 +240,12 @@ public class UsersControllerTests extends TestBase {
     @DisplayName("GET: Get all users sorted in descending order")
     void getAllUsersDescTest() {
         GetUserResponse[] getUserResponseDescList = step("Perform a GET request", () ->
-                given(GetUserRequestSpec)
+                given(UserRequestSpec)
                         .queryParam("sort", "desc")
                         .when()
                         .get()
                         .then()
-                        .spec(GetUserResponseSpec)
+                        .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
                                 "jsonSchemas/GetUsersResponseSchema.json"))
                         .extract().as(GetUserResponse[].class)
@@ -259,12 +254,12 @@ public class UsersControllerTests extends TestBase {
                     List<Integer> returnedIdsBeforeSort = Arrays.stream(getUserResponseDescList).
                             map(GetUserResponse::getId).toList();
                     logger.info("Actual sorting = " + returnedIdsBeforeSort);
-                    Allure.step("Actual sorting = " + returnedIdsBeforeSort);
+                    step("Actual sorting = " + returnedIdsBeforeSort);
 
                     List<Integer> returnedIdsAfterDescSort = new ArrayList<>(returnedIdsBeforeSort);
                     returnedIdsAfterDescSort.sort(Comparator.reverseOrder());
                     logger.info("Target sorting = " + returnedIdsAfterDescSort);
-                    Allure.step("Target sorting = " + returnedIdsAfterDescSort);
+                    step("Target sorting = " + returnedIdsAfterDescSort);
 
                     Assertions.assertEquals(returnedIdsBeforeSort, returnedIdsAfterDescSort,
                             "The actual sorting is DESC");
@@ -290,59 +285,27 @@ public class UsersControllerTests extends TestBase {
 
     private static AddUserRequest addUserRequestWithData() {
         AddUserRequest addUserRequest = new AddUserRequest();
-        User.SectionAddress sectionAddress = new User.SectionAddress();
-        User.SectionGeolocation sectionGeolocation = new User.SectionGeolocation();
-        User.SectionName sectionName = new User.SectionName();
-
-        addUserRequest.setEmail("John@gmail.com");
-        addUserRequest.setUsername("johnd");
-        addUserRequest.setPassword("m38rmF$");
-
-        sectionAddress.setCity("kilcoole");
-        sectionAddress.setStreet("7835 new road");
-        sectionAddress.setNumber(3);
-        sectionAddress.setZipcode("12926-3874");
-
-        sectionGeolocation.setLat("-37.3159");
-        sectionGeolocation.setLongitude("81.1496");
-
-        sectionAddress.setGeolocation(sectionGeolocation);
-        addUserRequest.setAddress(sectionAddress);
-
-        sectionName.setFirstname("John");
-        sectionName.setLastname("Doe");
-
-        addUserRequest.setName(sectionName);
-        addUserRequest.setPhone("1-570-236-7033");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            File jsonFile = new File("src/test/resources/json/AddUserReq.json");
+            addUserRequest = objectMapper.readValue(jsonFile, AddUserRequest.class);
+        } catch (IOException e) {
+            logger.error("Cannot parse the JSON file");
+            step("Cannot parse the JSON file");
+        }
         return addUserRequest;
     }
 
     private static UpdateUserRequest updateUserRequestWithData() {
         UpdateUserRequest updateUserRequest = new UpdateUserRequest();
-        User.SectionAddress sectionAddress = new User.SectionAddress();
-        User.SectionGeolocation sectionGeolocation = new User.SectionGeolocation();
-        User.SectionName sectionName = new User.SectionName();
-
-        updateUserRequest.setEmail("John@gmail.com");
-        updateUserRequest.setUsername("johnd");
-        updateUserRequest.setPassword("m38rmF$");
-
-        sectionAddress.setCity("kilcoole");
-        sectionAddress.setStreet("7835 new road");
-        sectionAddress.setNumber(3);
-        sectionAddress.setZipcode("12926-3874");
-
-        sectionGeolocation.setLat("-37.3159");
-        sectionGeolocation.setLongitude("81.1496");
-
-        sectionAddress.setGeolocation(sectionGeolocation);
-        updateUserRequest.setAddress(sectionAddress);
-
-        sectionName.setFirstname("John");
-        sectionName.setLastname("Doe");
-
-        updateUserRequest.setName(sectionName);
-        updateUserRequest.setPhone("1-570-236-7033");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            File jsonFile = new File("src/test/resources/json/UpdateUserReq.json");
+            updateUserRequest = objectMapper.readValue(jsonFile, UpdateUserRequest.class);
+        } catch (IOException e) {
+            logger.error("Cannot parse the JSON file");
+            step("Cannot parse the JSON file");
+        }
         return updateUserRequest;
     }
 }

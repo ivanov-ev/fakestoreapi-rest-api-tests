@@ -6,22 +6,24 @@ import io.restassured.specification.ResponseSpecification;
 
 import static helpers.CustomAllureListener.withCustomTemplates;
 import static io.restassured.RestAssured.with;
-import static io.restassured.filter.log.LogDetail.BODY;
-import static io.restassured.filter.log.LogDetail.STATUS;
+import static io.restassured.filter.log.LogDetail.*;
 import static io.restassured.http.ContentType.JSON;
 
-public class UpdateUserSpec {
-
-    public final static RequestSpecification UpdateUserRequestSpec = with()
+public class UserSpec {
+    public final static RequestSpecification UserRequestSpec = with()
             .filter(withCustomTemplates())
-            .contentType(JSON)
             .log().method()
             .log().uri()
             .log().body()
             .basePath("/users");
-    public final static ResponseSpecification UpdateUserResponseSpec = new ResponseSpecBuilder()
+
+    public final static RequestSpecification UserRequestWithJsonSpec = UserRequestSpec
+            .contentType(JSON);
+
+    public final static ResponseSpecification UserResponseWithJsonSpec200 = new ResponseSpecBuilder()
             .log(STATUS)
             .expectStatusCode(200)
+            .expectContentType(JSON)
             .log(BODY)
             .build();
 }

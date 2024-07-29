@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class TestBase {
 
-    Logger logger = LoggerFactory.getLogger(TestBase.class);
+    static Logger logger = LoggerFactory.getLogger(TestBase.class);
 
     @BeforeAll
     public static void configureRestAssured() {
