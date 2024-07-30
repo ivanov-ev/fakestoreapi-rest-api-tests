@@ -14,8 +14,7 @@ public class UserSpec {
             .filter(withCustomTemplates())
             .log().method()
             .log().uri()
-            .log().body()
-            .basePath("/users");
+            .log().body();
 
     public final static RequestSpecification UserRequestWithJsonSpec = UserRequestSpec
             .contentType(JSON);

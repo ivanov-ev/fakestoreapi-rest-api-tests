@@ -40,7 +40,7 @@ public class UsersControllerTests extends TestBase {
                     given(UserRequestWithJsonSpec)
                             .body(addUserRequest)
                             .when()
-                            .post()
+                            .post("/users")
                             .then()
                             .spec(UserResponseWithJsonSpec200)
                             .body(matchesJsonSchemaInClasspath(
@@ -66,7 +66,7 @@ public class UsersControllerTests extends TestBase {
                     given(UserRequestWithJsonSpec)
                             .body(updateUserRequest)
                             .when()
-                            .put("/{id}", id)
+                            .put("/users/{id}", id)
                             .then()
                             .spec(UserResponseWithJsonSpec200)
                             .body(matchesJsonSchemaInClasspath(
@@ -90,7 +90,7 @@ public class UsersControllerTests extends TestBase {
             DeleteUserResponse deleteUserResponse = step("Perform a DELETE request", () ->
                     given(UserRequestSpec)
                             .when()
-                            .delete("/{id}", id)
+                            .delete("/users/{id}", id)
                             .then()
                             .spec(UserResponseWithJsonSpec200)
                             .assertThat()
@@ -117,7 +117,7 @@ public class UsersControllerTests extends TestBase {
             GetUserResponse getUserResponse = step("Perform a GET request", () ->
                     given(UserRequestSpec)
                             .when()
-                            .get("/{id}", id)
+                            .get("/users/{id}", id)
                             .then()
                             .spec(UserResponseWithJsonSpec200)
                             .assertThat()
@@ -157,7 +157,7 @@ public class UsersControllerTests extends TestBase {
         GetUserResponse[] getUserResponseList = step("Perform a GET request", () ->
                 given(UserRequestSpec)
                         .when()
-                        .get()
+                        .get("/users")
                         .then()
                         .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
@@ -191,7 +191,7 @@ public class UsersControllerTests extends TestBase {
                 given(UserRequestSpec)
                         .queryParam("limit", limit)
                         .when()
-                        .get()
+                        .get("/users")
                         .then()
                         .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
@@ -212,7 +212,7 @@ public class UsersControllerTests extends TestBase {
                 given(UserRequestSpec)
                         .queryParam("sort", "asc")
                         .when()
-                        .get()
+                        .get("/users")
                         .then()
                         .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
@@ -243,7 +243,7 @@ public class UsersControllerTests extends TestBase {
                 given(UserRequestSpec)
                         .queryParam("sort", "desc")
                         .when()
-                        .get()
+                        .get("/users")
                         .then()
                         .spec(UserResponseWithJsonSpec200)
                         .body(matchesJsonSchemaInClasspath(
